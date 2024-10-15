@@ -63,6 +63,7 @@ knapsack_dynamic <- function(x, W) {
     }
   }
   
+
   # Backtrack to find which items to include in the knapsack
   best_value <- dp[n + 1, W + 1]
   elements <- c()
@@ -89,3 +90,8 @@ timing <- system.time({result <- knapsack_dynamic(x = knapsack_objects, W = 3500
 
 print(result)
 print(timing)
+
+
+
+
+
