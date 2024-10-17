@@ -1,0 +1,19 @@
+Package: lab06
+Type: Package
+Title: Three different implementations of the knapsack algorithm with decreasing time complexity
+Version: 1.0
+Date: 2024-10-17
+Author: Victor Guillo, Christian Kammerer
+Maintainer: Christian Kammerer <chrka821@student.liu.se>
+Description: The knapsack algorithm concerns itself with finding an optimal solution
+  to the filling of a backpack of limited capacity given a range of items with different weights
+  and values. The purpose of this package is to demonstrate the vast difference 
+  in performance between the different solutions.
+License: GPL-3 + file LICENSE
+Encoding: UTF-8
+RoxygenNote: 7.3.2
+Requires: R >= 3.5.0
+Suggests: 
+    testthat (>= 3.0.0),
+    devtools
+Config/testthat/edition: 3
