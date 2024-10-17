@@ -3,6 +3,11 @@ brute_force_knapsack <- function(x, W) {
   if (!is.data.frame(x) || !all(c("w", "v") %in% colnames(x))) {
     stop("Input must be a data frame with columns 'w' and 'v' for weight and value respectively.")
   }
+  # Check if all weights (w) and values (v) are greater than 0
+  if (any(x$w <= 0) || any(x$v <= 0)) {
+    stop("All weights ('w') and values ('v') must be greater than 0.")
+  }
+  
   
   n <- nrow(x)  # Number of items
   max_value <- 0
@@ -22,13 +27,12 @@ brute_force_knapsack <- function(x, W) {
   return(list(value = max_value, elements = best_combination))
 }
 
-# Create a dataset of 16 items
+
 knapsack_objects <- data.frame(
   w = sample(1:4000, size = 16, replace = TRUE),
   v = runif(n = 16, min = 0, max = 10000)
 )
 
-# Measure the time it takes to run the algorithm for 16 objects
 timing <- system.time({
   result <- brute_force_knapsack(x = knapsack_objects, W = 3500)
 })
@@ -44,6 +48,10 @@ knapsack_dynamic <- function(x, W) {
   # Check if input is valid
   if (!is.data.frame(x) || !all(c("w", "v") %in% colnames(x))) {
     stop("Input must be a data frame with columns 'w' and 'v' for weight and value respectively.")
+  }
+  # Check if all weights (w) and values (v) are greater than 0
+  if (any(x$w <= 0) || any(x$v <= 0)) {
+    stop("All weights ('w') and values ('v') must be greater than 0.")
   }
   
   n <- nrow(x)  # Number of items
@@ -92,6 +100,50 @@ print(result)
 print(timing)
 
 
+greedy_knapsack <- function(x, W) {
+  # Check if input is valid
+  if (!is.data.frame(x) || !all(c("w", "v") %in% colnames(x))) {
+    stop("Input must be a data frame with columns 'w' and 'v' for weight and value respectively.")
+  }
+  # Check if all weights (w) and values (v) are greater than 0
+  if (any(x$w <= 0) || any(x$v <= 0)) {
+    stop("All weights ('w') and values ('v') must be greater than 0.")
+  }
+  
+  # Calculate value-to-weight ratio
+  x$ratio <- x$v / x$w
+  
+  # Sort items by ratio in descending order
+  x <- x[order(-x$ratio), ]
+  
+  total_weight <- 0
+  total_value <- 0
+  elements <- c()
+  
+  # Add items to the knapsack until the capacity is reached
+  for (i in 1:nrow(x)) {
+    if (total_weight + x$w[i] <= W) {
+      total_weight <- total_weight + x$w[i]
+      total_value <- total_value + x$v[i]
+      elements <- c(elements, i)  # Store the item index
+    }
+  }
+  
+  return(list(value = total_value, elements = elements))
+}
+
+#sample data frame with 1,000,000 objects
+n <- 1000000
+knapsack_objects_greedy <- data.frame(
+  w = sample(1:100, n, replace = TRUE),  # Random weights
+  v = sample(1:1000, n, replace = TRUE)  # Random values
+)
 
 
+# Call the greedy_knapsack function
+timing <- system.time({result <- greedy_knapsack(knapsack_objects_greedy[1:800, ], W = 3500)})
+
+# Print the result
+print(result)
+print(timing)
 
