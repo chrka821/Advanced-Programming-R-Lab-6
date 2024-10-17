@@ -1,4 +1,12 @@
-# Brute-force knapsack
+#' @description
+#' This function implements a solution to the knapsack problem through brute force.
+#' This means it calculates every single possible solution (2^n) and chooses the best.
+#' This is achieved through running a loop 2^n times, 
+#' converting the loop variable to a binary representation, using that to slice the 
+#' elements and checking whether the solution is valid and whether it  is better than all prior solutions.
+#' @param x data.frame consisting of weights and values
+#' @param W size of the knapsack
+#' @return optimal knapsack solution
 brute_force_knapsack <- function(x, W) {
   if (!is.data.frame(x) || !all(c("w", "v") %in% colnames(x))) {
     stop("Input must be a data frame with columns 'w' and 'v' for weight and value respectively.")
@@ -14,7 +22,7 @@ brute_force_knapsack <- function(x, W) {
   best_combination <- c()
   
   for (i in 0:(2^n - 1)) {
-    elements <- as.logical(intToBits(i)[1:n])
+    elements <- as.logical(intToBits(i)[1:n]) # Convert i to binary representation used for slicing
     total_weight <- sum(x$w[elements])
     total_value <- sum(x$v[elements])
     
@@ -42,8 +50,20 @@ print(result)
 print(timing)
 
 
+#' @description
+#' This solution to the knapsack problem utilizes a dynamic programming approach.
+#' In this a matrix is used as a sort of look-up table. The columns correspond to the
+#' knapsack size and the rows to the first 1...i items. For each item it is evaluated,
+#' whether it fits in the knapsack or not, and whether it would improve on the previous,
+#' best solution that would still allow it's inclusion given a certain knapsack size.
+#' After the matrix is fully created the best combination can be retrieved through back-
+#' tracking. The complexity of the algorithm is based on the matrix size which is n * W, 
+#' hence the complexity is O(nW)
+#' @param name description
+#' @param x data.frame consisting of weights and values
+#' @param W size of the knapsack
+#' @return optimal knapsack solution
 
-# Dynamic Programming knapsack
 knapsack_dynamic <- function(x, W) {
   # Check if input is valid
   if (!is.data.frame(x) || !all(c("w", "v") %in% colnames(x))) {
