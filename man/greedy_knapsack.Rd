@@ -10,8 +10,6 @@ greedy_knapsack(x, W)
 \item{x}{data.frame consisting of weights and values}
 
 \item{W}{size of the knapsack}
-
-\item{name}{description}
 }
 \value{
 decent knapsack solution

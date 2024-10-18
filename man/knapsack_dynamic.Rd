@@ -10,8 +10,6 @@ knapsack_dynamic(x, W)
 \item{x}{data.frame consisting of weights and values}
 
 \item{W}{size of the knapsack}
-
-\item{name}{description}
 }
 \value{
 optimal knapsack solution
