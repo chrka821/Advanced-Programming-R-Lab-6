@@ -1,3 +1,4 @@
+#' Knapsack Bruteforce Approach
 #' @description
 #' This function implements a solution to the knapsack problem through brute force.
 #' This means it calculates every single possible solution (2^n) and chooses the best.
@@ -7,6 +8,14 @@
 #' @param x data.frame consisting of weights and values
 #' @param W size of the knapsack
 #' @return optimal knapsack solution
+#' @export
+#' @examples
+#' knapsack_objects <- data.frame(
+#'   w = sample(1:4000, size = 16, replace = TRUE),
+#'   v = runif(n = 16, min = 0, max = 10000)
+#'   )
+#' result <- brute_force_knapsack(x = knapsack_objects, W = 3500)
+
 brute_force_knapsack <- function(x, W) {
   if (!is.data.frame(x) || !all(c("w", "v") %in% colnames(x))) {
     stop("Input must be a data frame with columns 'w' and 'v' for weight and value respectively.")
@@ -14,6 +23,10 @@ brute_force_knapsack <- function(x, W) {
   # Check if all weights (w) and values (v) are greater than 0
   if (any(x$w <= 0) || any(x$v <= 0)) {
     stop("All weights ('w') and values ('v') must be greater than 0.")
+  } 
+  
+  if(W <= 0){
+    stop("Knapsack capacity must be larger than 0")
   }
   
   
@@ -35,21 +48,7 @@ brute_force_knapsack <- function(x, W) {
   return(list(value = max_value, elements = best_combination))
 }
 
-
-knapsack_objects <- data.frame(
-  w = sample(1:4000, size = 16, replace = TRUE),
-  v = runif(n = 16, min = 0, max = 10000)
-)
-
-timing <- system.time({
-  result <- brute_force_knapsack(x = knapsack_objects, W = 3500)
-})
-
-# Print the result and the time taken
-print(result)
-print(timing)
-
-
+#' Knapsack Dynamic Programming Approach
 #' @description
 #' This solution to the knapsack problem utilizes a dynamic programming approach.
 #' In this a matrix is used as a sort of look-up table. The columns correspond to the
@@ -63,6 +62,14 @@ print(timing)
 #' @param x data.frame consisting of weights and values
 #' @param W size of the knapsack
 #' @return optimal knapsack solution
+#' @export
+#' @examples
+#'  knapsack_objects <- data.frame(
+#'   w = sample(1:4000, size = 16, replace = TRUE),
+#'   v = runif(n = 16, min = 0, max = 10000)
+#'   )
+#' result <- knapsack_dynamic(x = knapsack_objects, W = 3500)
+#' 
 
 knapsack_dynamic <- function(x, W) {
   # Check if input is valid
@@ -108,17 +115,27 @@ knapsack_dynamic <- function(x, W) {
   return(list(value = best_value, elements = rev(elements)))
 }
 
-# Example usage:
-knapsack_objects <- data.frame(
-  w = sample(1:4000, size = 500, replace = TRUE),
-  v = runif(n = 500, min = 0, max = 10000)
-)
-
-timing <- system.time({result <- knapsack_dynamic(x = knapsack_objects, W = 3500)})
-
-print(result)
-print(timing)
-
+#' Knappsack Greedy Implementation
+#' @description
+#' This method implements a greedy approach to the knapsack problem.
+#' It works by filling the knapsack S1 with the "best bang for the buck" (value/weight) ratio
+#' items until at full capacity. It also checks whether the first not fitting item would 
+#' constitute a better solution. It might not have a ratio as good as other items,
+#' but might leave less empty space in the knapsack and ultimately would be a better solution than
+#' S1. 
+#' The algorithm does not guarantee an optimal solution, but a solution that is at least 50%
+#' that of the other algorithms solutions while having a complexity of only O(nlogn).
+#' @param name description
+#' @param x data.frame consisting of weights and values
+#' @param W size of the knapsack
+#' @return decent knapsack solution 
+#' @export
+#' @examples
+#' knapsack_objects <- data.frame(
+#'   w = sample(1:4000, size = 16, replace = TRUE),
+#'   v = runif(n = 16, min = 0, max = 10000)
+#'   )
+#' result <- greedy_knapsack(x = knapsack_objects, W = 3500)
 
 greedy_knapsack <- function(x, W) {
   # Check if input is valid
@@ -130,6 +147,9 @@ greedy_knapsack <- function(x, W) {
     stop("All weights ('w') and values ('v') must be greater than 0.")
   }
   
+  # Keep track of original indexes
+  x$original_index <- 1:nrow(x)
+  
   # Calculate value-to-weight ratio
   x$ratio <- x$v / x$w
   
@@ -138,32 +158,31 @@ greedy_knapsack <- function(x, W) {
   
   total_weight <- 0
   total_value <- 0
-  elements <- c()
+  S1 <- c()
+  first_non_fitting_item <- NULL  # Track the first item that didn't fit
   
-  # Add items to the knapsack until the capacity is reached
+  # Iterate over list sorted by value/weight ratio. append till capacity is reached 
+  # Include pre-sorting indexes in the knapsack
+  
   for (i in 1:nrow(x)) {
     if (total_weight + x$w[i] <= W) {
       total_weight <- total_weight + x$w[i]
       total_value <- total_value + x$v[i]
-      elements <- c(elements, i)  # Store the item index
+      S1 <- c(S1, x$original_index[i])  # Track original index
+    } else if (is.null(first_non_fitting_item)) {
+      # Store the first item that didn't fit
+      S2 <- x$original_index[i]
     }
   }
   
-  return(list(value = total_value, elements = elements))
+  # Check for existence of S2 (won't exist if all items fit)
+  value_S2 <- if (!is.null(S2)) x$v[x$original_index == S2] else 0
+  
+  # Compare S1 (greedy solution) with S2 (single item that didn't fit)
+  if (value_S2 > total_value) {
+    return(list(value = value_S2, elements = S2))
+  } else {
+    return(list(value = total_value, elements = S1))
+  }
 }
-
-#sample data frame with 1,000,000 objects
-n <- 1000000
-knapsack_objects_greedy <- data.frame(
-  w = sample(1:100, n, replace = TRUE),  # Random weights
-  v = sample(1:1000, n, replace = TRUE)  # Random values
-)
-
-
-# Call the greedy_knapsack function
-timing <- system.time({result <- greedy_knapsack(knapsack_objects_greedy[1:800, ], W = 3500)})
-
-# Print the result
-print(result)
-print(timing)
 
