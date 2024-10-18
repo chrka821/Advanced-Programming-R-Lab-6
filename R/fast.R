@@ -81,6 +81,9 @@ knapsack_dynamic <- function(x, W) {
     stop("All weights ('w') and values ('v') must be greater than 0.")
   }
   
+  if(W <= 0){
+    stop("Knapsack capacity must be larger than 0")
+  }
   n <- nrow(x)  # Number of items
   # Initialize a matrix dp with 0s of dimension (n+1) x (W+1)
   dp <- matrix(0, n + 1, W + 1)
@@ -145,6 +148,9 @@ greedy_knapsack <- function(x, W) {
   # Check if all weights (w) and values (v) are greater than 0
   if (any(x$w <= 0) || any(x$v <= 0)) {
     stop("All weights ('w') and values ('v') must be greater than 0.")
+  }
+  if(W <= 0){
+    stop("Knapsack capacity must be larger than 0")
   }
   
   # Keep track of original indexes
