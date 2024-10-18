@@ -58,7 +58,6 @@ brute_force_knapsack <- function(x, W) {
 #' After the matrix is fully created the best combination can be retrieved through back-
 #' tracking. The complexity of the algorithm is based on the matrix size which is n * W, 
 #' hence the complexity is O(nW)
-#' @param name description
 #' @param x data.frame consisting of weights and values
 #' @param W size of the knapsack
 #' @return optimal knapsack solution
@@ -128,7 +127,6 @@ knapsack_dynamic <- function(x, W) {
 #' S1. 
 #' The algorithm does not guarantee an optimal solution, but a solution that is at least 50%
 #' that of the other algorithms solutions while having a complexity of only O(nlogn).
-#' @param name description
 #' @param x data.frame consisting of weights and values
 #' @param W size of the knapsack
 #' @return decent knapsack solution 
