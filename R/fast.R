@@ -80,27 +80,32 @@ knapsack_dynamic <- function(x, W) {
     stop("All weights ('w') and values ('v') must be greater than 0.")
   }
   
-  if(W <= 0){
+  if (W <= 0) {
     stop("Knapsack capacity must be larger than 0")
   }
-  n <- nrow(x)  # Number of items
+  
+  # Prune Irrelevant Items: Remove items where weight is greater than the knapsack capacity
+  x <- x[x$w <= W, ]
+  
+  # Extract weights and values to reduce repetitive calls
+  weights <- x$w
+  values <- x$v
+  n <- length(weights)  # Number of items
+  
   # Initialize a matrix dp with 0s of dimension (n+1) x (W+1)
   dp <- matrix(0, n + 1, W + 1)
   
   # Fill the dp matrix
   for (i in 1:n) {
     for (w in 0:W) {
-      if (x$w[i] <= w) {
-        # Maximize the value by either including the item or not
-        dp[i + 1, w + 1] <- max(dp[i, w + 1], dp[i, w + 1 - x$w[i]] + x$v[i])
+      if (weights[i] <= w) {
+        dp[i + 1, w + 1] <- max(dp[i, w + 1], dp[i, w + 1 - weights[i]] + values[i])
       } else {
-        # Item can't be included because it's too heavy
         dp[i + 1, w + 1] <- dp[i, w + 1]
       }
     }
   }
   
-
   # Backtrack to find which items to include in the knapsack
   best_value <- dp[n + 1, W + 1]
   elements <- c()
@@ -109,7 +114,7 @@ knapsack_dynamic <- function(x, W) {
   for (i in n:1) {
     if (dp[i + 1, w + 1] != dp[i, w + 1]) {
       elements <- c(elements, i)
-      w <- w - x$w[i]
+      w <- w - weights[i]
     }
   }
   
@@ -189,4 +194,3 @@ greedy_knapsack <- function(x, W) {
     return(list(value = total_value, elements = S1))
   }
 }
-
