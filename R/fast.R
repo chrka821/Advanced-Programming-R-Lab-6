@@ -1,51 +1,81 @@
-#' Knapsack Bruteforce Approach
+#' Knapsack Bruteforce Approach with Parallelization
+#' 
 #' @description
-#' This function implements a solution to the knapsack problem through brute force.
-#' This means it calculates every single possible solution (2^n) and chooses the best.
-#' This is achieved through running a loop 2^n times, 
-#' converting the loop variable to a binary representation, using that to slice the 
-#' elements and checking whether the solution is valid and whether it  is better than all prior solutions.
-#' @param x data.frame consisting of weights and values
-#' @param W size of the knapsack
-#' @return optimal knapsack solution
+#' This function implements a solution to the knapsack problem using brute force. 
+#' It calculates every single possible solution (2^n) and chooses the best one. 
+#' It can also take advantage of parallel computing to speed up the solution.
+#' The algorithm evaluates all combinations of items, converting the index to a binary 
+#' representation to select items and check whether the solution is valid and optimal.
+#' If `parallel = TRUE`, the computation will be parallelized across multiple CPU cores.
+#' 
+#' @param x A data frame consisting of weights (column `w`) and values (column `v`).
+#' @param W Numeric, the maximum capacity of the knapsack.
+#' @param parallel Logical, whether to use parallel processing. Defaults to `FALSE`.
+#' @return A list containing the maximum value and the indices of the selected items 
+#' that produce this value.
 #' @export
 #' @examples
 #' knapsack_objects <- data.frame(
 #'   w = sample(1:4000, size = 16, replace = TRUE),
 #'   v = runif(n = 16, min = 0, max = 10000)
-#'   )
-#' result <- brute_force_knapsack(x = knapsack_objects, W = 3500)
+#' )
+#' # Without parallelization
+#' result <- brute_force_knapsack(x = knapsack_objects, W = 3500, parallel = FALSE)
+#' print(result)
+#' 
+#' # With parallelization
+#' result_parallel <- brute_force_knapsack(x = knapsack_objects, W = 3500, parallel = TRUE)
+#' print(result_parallel)
 
-brute_force_knapsack <- function(x, W) {
+library(parallel)
+
+brute_force_knapsack <- function(x, W, parallel = FALSE) {
   if (!is.data.frame(x) || !all(c("w", "v") %in% colnames(x))) {
     stop("Input must be a data frame with columns 'w' and 'v' for weight and value respectively.")
   }
+  
   # Check if all weights (w) and values (v) are greater than 0
   if (any(x$w <= 0) || any(x$v <= 0)) {
     stop("All weights ('w') and values ('v') must be greater than 0.")
-  } 
-  
-  if(W <= 0){
-    stop("Knapsack capacity must be larger than 0")
   }
   
-  
   n <- nrow(x)  # Number of items
-  max_value <- 0
-  best_combination <- c()
+  combinations <- 0:(2^n - 1)
   
-  for (i in 0:(2^n - 1)) {
-    elements <- as.logical(intToBits(i)[1:n]) # Convert i to binary representation used for slicing
+  # Define the function to evaluate a single combination
+  eval_combination <- function(i) {
+    elements <- as.logical(intToBits(i)[1:n]) # Convert i to binary representation
     total_weight <- sum(x$w[elements])
     total_value <- sum(x$v[elements])
-    
-    if (total_weight <= W && total_value > max_value) {
-      max_value <- total_value
-      best_combination <- which(elements)
+    if (total_weight <= W) {
+      return(list(value = total_value, elements = which(elements)))
+    } else {
+      return(list(value = 0, elements = c()))
     }
   }
   
-  return(list(value = max_value, elements = best_combination))
+  if (parallel) {
+    # Use parallel computing
+    no_cores <- detectCores() - 1  # Detect number of available cores
+    cl <- makeCluster(no_cores)
+    
+    # Export necessary variables to the worker nodes
+    clusterExport(cl, varlist = c("x", "W", "n", "eval_combination"), envir = environment())
+    
+    # Evaluate combinations in parallel
+    results <- parLapply(cl, combinations, eval_combination)
+    stopCluster(cl)
+  } else {
+    # Without parallelization
+    results <- lapply(combinations, eval_combination)
+  }
+  
+  # Extract the combination with the maximum value
+  max_result <- do.call(rbind, lapply(results, function(res) c(res$value, length(res$elements))))
+  best_index <- which.max(max_result[, 1])
+  best_combination <- results[[best_index]]
+  
+  return(best_combination)
 }
 
 #' Knapsack Dynamic Programming Approach
