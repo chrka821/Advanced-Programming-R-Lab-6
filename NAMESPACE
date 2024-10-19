@@ -3,3 +3,8 @@
 export(brute_force_knapsack)
 export(greedy_knapsack)
 export(knapsack_dynamic)
+importFrom(parallel,clusterExport)
+importFrom(parallel,detectCores)
+importFrom(parallel,makeCluster)
+importFrom(parallel,parLapply)
+importFrom(parallel,stopCluster)

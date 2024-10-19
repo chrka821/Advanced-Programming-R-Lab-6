@@ -1,5 +1,5 @@
 #' Knapsack Bruteforce Approach with Parallelization
-#' 
+#' @importFrom parallel detectCores makeCluster clusterExport parLapply stopCluster
 #' @description
 #' This function implements a solution to the knapsack problem using brute force. 
 #' It calculates every single possible solution (2^n) and chooses the best one. 
@@ -26,8 +26,6 @@
 #' # With parallelization
 #' result_parallel <- brute_force_knapsack(x = knapsack_objects, W = 3500, parallel = TRUE)
 #' print(result_parallel)
-
-library(parallel)
 
 brute_force_knapsack <- function(x, W, parallel = FALSE) {
   if (!is.data.frame(x) || !all(c("w", "v") %in% colnames(x))) {

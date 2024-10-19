@@ -2,29 +2,39 @@
 % Please edit documentation in R/fast.R
 \name{brute_force_knapsack}
 \alias{brute_force_knapsack}
-\title{Knapsack Bruteforce Approach}
+\title{Knapsack Bruteforce Approach with Parallelization}
 \usage{
-brute_force_knapsack(x, W)
+brute_force_knapsack(x, W, parallel = FALSE)
 }
 \arguments{
-\item{x}{data.frame consisting of weights and values}
+\item{x}{A data frame consisting of weights (column `w`) and values (column `v`).}
 
-\item{W}{size of the knapsack}
+\item{W}{Numeric, the maximum capacity of the knapsack.}
+
+\item{parallel}{Logical, whether to use parallel processing. Defaults to `FALSE`.}
 }
 \value{
-optimal knapsack solution
+A list containing the maximum value and the indices of the selected items 
+that produce this value.
 }
 \description{
-This function implements a solution to the knapsack problem through brute force.
-This means it calculates every single possible solution (2^n) and chooses the best.
-This is achieved through running a loop 2^n times, 
-converting the loop variable to a binary representation, using that to slice the 
-elements and checking whether the solution is valid and whether it  is better than all prior solutions.
+This function implements a solution to the knapsack problem using brute force. 
+It calculates every single possible solution (2^n) and chooses the best one. 
+It can also take advantage of parallel computing to speed up the solution.
+The algorithm evaluates all combinations of items, converting the index to a binary 
+representation to select items and check whether the solution is valid and optimal.
+If `parallel = TRUE`, the computation will be parallelized across multiple CPU cores.
 }
 \examples{
 knapsack_objects <- data.frame(
   w = sample(1:4000, size = 16, replace = TRUE),
   v = runif(n = 16, min = 0, max = 10000)
-  )
-result <- brute_force_knapsack(x = knapsack_objects, W = 3500)
+)
+# Without parallelization
+result <- brute_force_knapsack(x = knapsack_objects, W = 3500, parallel = FALSE)
+print(result)
+
+# With parallelization
+result_parallel <- brute_force_knapsack(x = knapsack_objects, W = 3500, parallel = TRUE)
+print(result_parallel)
 }
