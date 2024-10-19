@@ -39,6 +39,11 @@ brute_force_knapsack <- function(x, W, parallel = FALSE) {
     stop("All weights ('w') and values ('v') must be greater than 0.")
   }
   
+  # Add check for knapsack capacity (W) being greater than 0
+  if (W <= 0) {
+    stop("Knapsack capacity must be greater than 0.")
+  }
+  
   n <- nrow(x)  # Number of items
   combinations <- 0:(2^n - 1)
   
