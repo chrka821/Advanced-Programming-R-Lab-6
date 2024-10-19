@@ -58,8 +58,13 @@ brute_force_knapsack <- function(x, W, parallel = FALSE) {
   }
   
   if (parallel) {
-    # Use parallel computing
-    no_cores <- detectCores() - 1  # Detect number of available cores
+    # Determine number of cores based on environment
+    no_cores <- if (Sys.getenv("NOT_CRAN") != "") {
+      detectCores() - 1  # Use all but one core when not on CRAN
+    } else {
+      2  # Limit to 2 cores in CRAN-like environments
+    }
+    
     cl <- makeCluster(no_cores)
     
     # Export necessary variables to the worker nodes
