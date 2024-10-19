@@ -60,9 +60,9 @@ brute_force_knapsack <- function(x, W, parallel = FALSE) {
   if (parallel) {
     # Determine number of cores based on environment
     no_cores <- if (Sys.getenv("NOT_CRAN") != "") {
-      detectCores() - 1  # Use all but one core when not on CRAN
+      min(detectCores() - 1, 2)  # Limit to 2 cores if running on CRAN-like environments
     } else {
-      2  # Limit to 2 cores in CRAN-like environments
+      detectCores() - 1  # Use all but one core when not on CRAN
     }
     
     cl <- makeCluster(no_cores)
