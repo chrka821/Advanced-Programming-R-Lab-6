@@ -1,0 +1,163 @@
+---
+title: "Lab Report Knapsack"
+author: "Christian Kammerer"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{lab06}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(lab06) # load package
+library(profvis) # profiling package
+```
+# Overview
+
+This package implements three distinct solutions for the knapsack problem.
+
+The knapsack problem is a problem in which we are tasked with finding an optimal (in some cases) good solution to the filling of a knapsack of finite capacity W. 
+
+For this we have a finite set of items with varying weights w and values v. The goal is to maximize 
+the value of the items contained within the knapsack. 
+
+For more information regarding the knapsack problem see here <a href="https://en.wikipedia.org/wiki/Knapsack_problem"> Wikipedia </a>
+
+The three implementations are
+<ol> 
+  <li>Brute-Force with guaranteed optimal solution and time complexity of $O(2^n)$</li>
+  <li>Dynamic approach through matrix with guaranteed optimal solution and time complexity of $O(Wn)$</li>
+  <li>Greedy approach with guaranteed solution of at least 50% of the optimal solution with time complexity $O(nlogn)$ </li>
+</ol>
+
+
+# 1. Generating sample data 
+```{r}
+# Set seed for reproducability reasons
+suppressWarnings(RNGversion(min(as.character(getRversion()),"3.5.3")))
+set.seed(42, kind = "Mersenne-Twister", normal.kind = "Inversion")
+n <- 1000000 # Problem size
+knapsack_objects <- data.frame(
+  w=sample(1:4000, size = n, replace = TRUE),
+  v=runif(n = n, 0, 10000)
+)
+```
+# 2. Brutforce approach
+The bruteforce approach works by computing every single solution, no matter whether it is possible or not and keeps track of the best solution. Since every single item either is part of the solution or not, the time complexity therefore is $O(2^n)$. 
+
+
+```{r wider-plot, fig.width=7, fig.height=5, echo=FALSE}
+library(ggplot2)
+
+# Data for time taken by parallel and non-parallel execution for different n
+execution_times <- data.frame(
+  n = 1:22,
+  time_non_parallel = c(0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.01, 0.01, 0.03, 0.05, 0.08, 0.17, 0.36, 0.86, 1.80, 4.47, 9.33, 18.15, 38.52),
+  time_parallel = c(0.42, 0.31, 0.32, 0.32, 0.30, 0.31, 0.29, 0.30, 0.30, 0.31, 0.30, 0.33, 0.34, 0.69, 1.10, 0.95, 0.95, 1.56, 4.19, 8.48, 16.51, 29.49),
+  time_non_parallel_pruned = c(0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.01, 0.02, 0.06, 0.11, 0.17, 0.36, 0.73, 1.53, 3.23, 5.72),
+  time_parallel_pruned = c(0.44, 0.32, 0.29, 0.28, 0.29, 0.30, 0.29, 0.30, 0.30, 0.30, 0.30, 0.28, 0.29, 0.33, 0.39, 0.78, 1.11, 0.96, 2.58, 1.51, 4.33, 5.87)
+)
+
+# Plotting the execution times with wider dimensions
+ggplot(execution_times, aes(x = n)) +
+  geom_line(aes(y = time_parallel, color = "Parallel"), linewidth = 1) +
+  geom_line(aes(y = time_non_parallel, color = "Non-parallel"), linewidth = 1) +
+  geom_line(aes(y = time_non_parallel_pruned, color = "Non-parallel (pruned)"), linewidth = 1) +
+  geom_line(aes(y = time_parallel_pruned, color = "Parallel (pruned)"), linewidth = 1) +
+  labs(title = "Execution Time: Parallel vs Non-parallel Brute Force Knapsack",
+       x = "Number of Items (n)",
+       y = "Execution Time (seconds)") +
+  scale_color_manual(name = "Execution Mode", values = c("Parallel" = "blue", "Non-parallel" = "red", "Parallel (pruned)" = "green", "Non-parallel (pruned)" = "magenta")) +
+  theme_minimal()
+```
+
+As evident from the performance benchmark, the parallelized solution starts getting a significant performance advantage as $n$ grows. This is due to the complexity growing exponentially and the performance advantage being reflected stronger, but also the initial set up of the multiple cores has a performance overhead that takes a bit of time to pay-off. <br>
+
+Much more successful is pruning items that cannot constitute a valid solution as they are larger than the knapsack size to begin with. This is because the approach does not attempt to optimize the execution time of the calculation of a solution, but instead actively works towards decreasing the complexity of the problem at hand. Of course this performance increase is not guaranteed and only applys if few can prune items, otherwise the performance would be equal if not even a bit slower, as we have one additional comparison operation we are performing.
+
+```{r bruteforce-example, include = TRUE, results = 'asis'}
+brute_force_objects = knapsack_objects[1:16, ]
+execution_duration <- system.time({result <- brute_force_knapsack(x=brute_force_objects, W=3500)$value})
+print(result)
+print(execution_duration)
+```
+**Question:** How long does it take to run the algorithm for $n=16$? <br>
+**Answer:** 0.25 seconds (non-parallelized, not pruned) <br>
+
+**Question:** What performance gain could you get by parallelizing brute force search? <br>
+**Answer:** For small values there was a performance decrease due to the overhead, the larger the values, the larger the gap between the two implementations.
+
+# 2. Dynamic Programming Approach
+The dynamic approach works by creating an $n \times W$ matrix. Each row  $i$ corresponds to the first
+$1$ to $i$ items, and each column $j$ corresponds to a knapsack of capacity $j$.
+
+The matrix is filled with values row by row, column by column. For each cell $i,j$ the optimal knapsack solution is calculated if only the first $i$ items are considered and the knapsack capacity were to be $j$. Through this process we iteratively calculate the optimal solutions until we reach the end of the matrix and thus have found the optimal solution for the entire knapsack problem. Through backtracking the matrix we can then ascertain what items are part of the solution. The complexity of this approach is the size of the matrix ($O(nW)$).
+
+```{r dynamic-example, include = TRUE, results = 'asis'}
+dynamic_objects = knapsack_objects[1:500, ]
+execution_duration_1 <- system.time({result <- knapsack_dynamic(x=dynamic_objects, W=3500)$value})
+execution_duration_2 <- system.time({result <- knapsack_dynamic(x=dynamic_objects, W=10000)$value})
+print(result)
+print(execution_duration_1)
+print(execution_duration_2)
+```
+
+**Question:** How long does it take for $n=500$? 
+**Answer:** Impossible to say as it also depends on the capacity $W$ of the knapsack, as you can see in the code snippet above.
+
+# 3. Greedy Approach
+The greedy approach relies on sorting the items by their value/weight ratio. It then fills the knapsack with the items that have the best ratio until the knapsack is filled. 
+
+It compares the value of this knapsack with the value of the knapsack filled with the first item that did not fit. Whatever solution is better is the result of the algorithm. As mentioned in the beginning, this does not guarantee the optimal solution, but rather at least 50% of the value of the optimal solution. While this certainly is not great, it is incredibly fast.
+
+
+```{r greedy-example, include = TRUE, results = 'asis'}
+execution_duration <- system.time({result <- greedy_knapsack(x=knapsack_objects, W=3500)$value})
+print(result)
+print(execution_duration)
+```
+
+**Question:** How long does it take for $n=1000000$. <br>
+**Answer:** It's fast, check above. 😉
+
+**Question:** Your solution is better than in the test examples, why is that?<br> 
+**Answer:** The solution that is found depends how the items are sorted after computing the ratioes. 
+If multiple items have the same ratio, it is up to the implementation of the sorting algortihm whether the initial order is kept (stable-algorithm), or not (unstable algorithm). 
+
+I assume that the differnt sorting functionalities in R might rely on different sorting algorithms and therefore yield different results. 
+
+**Question:** Is your algorithm still greedy and does it still have $O(n)$ complexity? <br>
+**Answer:** The graph below showcases the runtimes of the greedy algorithm for a wide range of $n$'s and a linear function that best describes the execution times. This perfectly demonstrates the linear growth of $n$. A greedy algorithm solves a solution by choosing the *locally optimal solution* in hopes of finding the *globally optimal solution*. As the greedy knapsack algorithm chooses the item it deems optimal at every single timestep, it is still fundamentally greedy.
+
+```{r greedy_growth_demo, echo = FALSE, fig.height=5, fig.width=7}
+# Provided data
+n_values <- c(1.0e+01, 2.5e+01, 5.0e+01, 1.0e+02, 2.5e+02, 5.0e+02, 1.0e+03, 2.5e+03, 5.0e+03, 
+              1.0e+04, 2.5e+04, 5.0e+04, 1.0e+05, 2.5e+05, 5.0e+05, 1.0e+06, 2.5e+06, 5.0e+06, 
+              1.0e+07, 2.5e+07, 5.0e+07, 1.0e+08)
+time_values <- c(0.09, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.00, 0.00, 0.01, 0.03, 0.04, 0.15, 
+                 0.28, 0.55, 1.64, 3.34, 6.58, 15.83, 30.84, 63.54)
+
+# Fit linear model
+fit <- lm(time_values ~ n_values)
+
+# Plot the data and the fitted line (linear scale)
+plot(n_values, time_values, pch = 19, col = "blue", 
+     xlab = "Number of Items (n)", ylab = "Execution Time (seconds)", 
+     main = "Greedy Knapsack Execution Time vs. Number of Items")
+
+# Add the fitted line
+abline(fit, col = "red", lwd = 2)
+
+# Add the equation to the plot
+slope <- coef(fit)[2]
+intercept <- coef(fit)[1]
+legend("topleft", legend = paste0("y = ", round(slope, 6), " * n + ", round(intercept, 6)), 
+       col = "red", lty = 1, cex = 0.8)
+
+```
+<br>
+*Small caveat:* if $n$ reaches a certain size it's growth starts to become quadratic, I assume this is due to memory starting to become a factor.
+
+That's all, thanks for reading. 🦧

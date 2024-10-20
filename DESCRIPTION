@@ -15,5 +15,10 @@ RoxygenNote: 7.3.2
 Requires: R >= 3.5.0
 Suggests: 
     testthat (>= 3.0.0),
-    devtools
+    devtools,
+    knitr,
+    rmarkdown,
+    profvis,
+    ggplot2
+VignetteBuilder: knitr
 Config/testthat/edition: 3
